@@ -1,0 +1,100 @@
+---
+title: "Shoulder rotation and elbow loading during a pitch"
+subtitle: "Time-resolved mechanics from Driveline's OpenBiomechanics Project"
+---
+
+How do throwing mechanics relate to elbow loading? This scatterplot compares
+shoulder rotation velocity and elbow varus/valgus moment throughout pitching
+motion-capture trials.
+
+## Shoulder rotation and elbow moment
+
+```{r}
+#| label: fig-shoulder-elbow
+#| fig-cap: "Shoulder rotation velocity and elbow moment at matched time points during pitching trials."
+#| fig-width: 9
+#| fig-height: 5.5
+
+library(ggplot2)
+library(readr)
+library(dplyr)
+
+release_url <- "https://github.com/drivelineresearch/openbiomechanics/releases/download/dataset-v1"
+forces_zip <- file.path(tempdir(), "pitching_forces_moments.zip")
+velos_zip <- file.path(tempdir(), "pitching_joint_velos.zip")
+
+download.file(
+  paste(release_url, "pitching_forces_moments.zip", sep = "/"),
+  forces_zip,
+  mode = "wb",
+  quiet = TRUE
+)
+download.file(
+  paste(release_url, "pitching_joint_velos.zip", sep = "/"),
+  velos_zip,
+  mode = "wb",
+  quiet = TRUE
+)
+
+velocities <- read_csv(
+  unz(velos_zip, "joint_velos.csv"),
+  col_select = c(session_pitch, time, shoulder_velo_z),
+  show_col_types = FALSE
+)
+moments <- read_csv(
+  unz(forces_zip, "forces_moments.csv"),
+  col_select = c(session_pitch, time, elbow_moment_y),
+  show_col_types = FALSE
+)
+
+plot_data <- inner_join(
+  velocities,
+  moments,
+  by = c("session_pitch", "time"),
+  relationship = "one-to-one"
+) |>
+  filter(!is.na(shoulder_velo_z), !is.na(elbow_moment_y))
+
+ggplot(plot_data, aes(x = shoulder_velo_z, y = elbow_moment_y)) +
+  geom_point(alpha = 0.05, color = "#176B87", size = 0.5) +
+  labs(
+    x = "Shoulder internal/external rotation velocity (deg/s; internal is negative)",
+    y = "Elbow varus (+) / valgus (-) moment (Nm)",
+    caption = paste(
+      "OpenBiomechanics Project; n =", format(nrow(plot_data), big.mark = ","),
+      "time samples across", n_distinct(plot_data$session_pitch), "pitch trials"
+    )
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+The chart contains **`r format(nrow(plot_data), big.mark = ",")` matched time
+samples** from **`r n_distinct(plot_data$session_pitch)` pitching trials**.
+Marker-derived signals are sampled at 360 Hz, so each pitch contributes many
+measurements over time. Samples from the same pitch are repeated observations,
+not independent pitches.
+
+Pitch speed and stride length are available in the project's pitch-level
+summary data, alongside peak shoulder-rotation velocity and elbow varus moment.
+This chart focuses on the time-varying mechanics instead.
+
+## What this can—and cannot—tell us
+
+These measurements can help explore how mechanics and joint loading vary
+together and may inform hypotheses about injury risk. The dataset does **not**
+include confirmed injury diagnoses, so it cannot establish which athletes were
+injured or validate an injury-risk estimate.
+
+## About the data
+
+The data come from Driveline Baseball Research & Development's
+[OpenBiomechanics Project](https://github.com/drivelineresearch/openbiomechanics).
+The repository documents **411 pitching trials**, not 40,000 distinct pitches.
+The full-signal tables used here contain 247,709 matched timestamps across
+those trials; the chart includes samples where both measurements are present.
+The pitch-level table includes pitch speed, stride length, and summary loading
+metrics.
+
+Sources: [pitching full-signal release](https://github.com/drivelineresearch/openbiomechanics/releases/tag/dataset-v1)
+and [pitching summary data](https://github.com/drivelineresearch/openbiomechanics/tree/main/baseball_pitching/data).
+Used under the [CC BY-NC-SA 4.0 data license](https://github.com/drivelineresearch/openbiomechanics/blob/main/LICENSE-DATA.md).

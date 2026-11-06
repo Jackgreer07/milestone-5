@@ -1,0 +1,21 @@
+project:
+  type: website
+
+website:
+  title: "Driveline Athlete Assessments"
+  navbar:
+    background: "#243447"
+    foreground: "#ffffff"
+    left:
+      - text: "Home"
+        href: index.qmd
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true
+
+execute:
+  warning: false
+  message: false
