@@ -1,0 +1,30 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Shoulder rotation and elbow loading during a pitch",
+    "section": "",
+    "text": "How do throwing mechanics relate to elbow loading? This scatterplot compares shoulder rotation velocity and elbow varus/valgus moment throughout pitching motion-capture trials."
+  },
+  {
+    "objectID": "index.html#shoulder-rotation-and-elbow-moment",
+    "href": "index.html#shoulder-rotation-and-elbow-moment",
+    "title": "Shoulder rotation and elbow loading during a pitch",
+    "section": "Shoulder rotation and elbow moment",
+    "text": "Shoulder rotation and elbow moment\n\n\nCode\nlibrary(ggplot2)\nlibrary(readr)\nlibrary(dplyr)\n\nrelease_url &lt;- \"https://github.com/drivelineresearch/openbiomechanics/releases/download/dataset-v1\"\nforces_zip &lt;- file.path(tempdir(), \"pitching_forces_moments.zip\")\nvelos_zip &lt;- file.path(tempdir(), \"pitching_joint_velos.zip\")\n\ndownload.file(\n  paste(release_url, \"pitching_forces_moments.zip\", sep = \"/\"),\n  forces_zip,\n  mode = \"wb\",\n  quiet = TRUE\n)\ndownload.file(\n  paste(release_url, \"pitching_joint_velos.zip\", sep = \"/\"),\n  velos_zip,\n  mode = \"wb\",\n  quiet = TRUE\n)\n\nvelocities &lt;- read_csv(\n  unz(velos_zip, \"joint_velos.csv\"),\n  col_select = c(session_pitch, time, shoulder_velo_z),\n  show_col_types = FALSE\n)\nmoments &lt;- read_csv(\n  unz(forces_zip, \"forces_moments.csv\"),\n  col_select = c(session_pitch, time, elbow_moment_y),\n  show_col_types = FALSE\n)\n\nplot_data &lt;- inner_join(\n  velocities,\n  moments,\n  by = c(\"session_pitch\", \"time\"),\n  relationship = \"one-to-one\"\n) |&gt;\n  filter(!is.na(shoulder_velo_z), !is.na(elbow_moment_y))\n\nggplot(plot_data, aes(x = shoulder_velo_z, y = elbow_moment_y)) +\n  geom_point(alpha = 0.05, color = \"#176B87\", size = 0.5) +\n  labs(\n    x = \"Shoulder internal/external rotation velocity (deg/s; internal is negative)\",\n    y = \"Elbow varus (+) / valgus (-) moment (Nm)\",\n    caption = paste(\n      \"OpenBiomechanics Project; n =\", format(nrow(plot_data), big.mark = \",\"),\n      \"time samples across\", n_distinct(plot_data$session_pitch), \"pitch trials\"\n    )\n  ) +\n  theme_minimal(base_size = 13)\n\n\n\n\n\n\n\n\nFigure 1: Shoulder rotation velocity and elbow moment at matched time points during pitching trials.\n\n\n\n\n\nThe chart contains 246,065 matched time samples from 411 pitching trials. Marker-derived signals are sampled at 360 Hz, so each pitch contributes many measurements over time. Samples from the same pitch are repeated observations, not independent pitches.\nPitch speed and stride length are available in the project’s pitch-level summary data, alongside peak shoulder-rotation velocity and elbow varus moment. This chart focuses on the time-varying mechanics instead."
+  },
+  {
+    "objectID": "index.html#what-this-canand-cannottell-us",
+    "href": "index.html#what-this-canand-cannottell-us",
+    "title": "Shoulder rotation and elbow loading during a pitch",
+    "section": "What this can—and cannot—tell us",
+    "text": "What this can—and cannot—tell us\nThese measurements can help explore how mechanics and joint loading vary together and may inform hypotheses about injury risk. The dataset does not include confirmed injury diagnoses, so it cannot establish which athletes were injured or validate an injury-risk estimate."
+  },
+  {
+    "objectID": "index.html#about-the-data",
+    "href": "index.html#about-the-data",
+    "title": "Shoulder rotation and elbow loading during a pitch",
+    "section": "About the data",
+    "text": "About the data\nThe data come from Driveline Baseball Research & Development’s OpenBiomechanics Project. The repository documents 411 pitching trials, not 40,000 distinct pitches. The full-signal tables used here contain 247,709 matched timestamps across those trials; the chart includes samples where both measurements are present. The pitch-level table includes pitch speed, stride length, and summary loading metrics.\nSources: pitching full-signal release and pitching summary data. Used under the CC BY-NC-SA 4.0 data license."
+  }
+]
