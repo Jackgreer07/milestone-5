@@ -7,6 +7,13 @@ How do throwing mechanics relate to elbow loading? This scatterplot compares
 shoulder rotation velocity and elbow varus/valgus moment throughout pitching
 motion-capture trials.
 
+## What this can—and cannot—tell us
+
+These measurements can help explore how mechanics and joint loading vary
+together and may inform hypotheses about injury risk. The dataset does **not**
+include confirmed injury diagnoses, so it cannot establish which athletes were
+injured or validate an injury-risk estimate.
+
 ## Shoulder rotation and elbow moment
 
 ```{r}
@@ -68,6 +75,11 @@ ggplot(plot_data, aes(x = shoulder_velo_z, y = elbow_moment_y)) +
   theme_minimal(base_size = 13)
 ```
 
+This scatterplot helps show whether shoulder rotation speed and elbow moment
+tend to vary together during pitching. A pattern in the points can suggest an
+association between these mechanics, but it does not show that one causes the
+other or that either measure predicts injury.
+
 The chart contains **`r format(nrow(plot_data), big.mark = ",")` matched time
 samples** from **`r n_distinct(plot_data$session_pitch)` pitching trials**.
 Marker-derived signals are sampled at 360 Hz, so each pitch contributes many
@@ -78,12 +90,92 @@ Pitch speed and stride length are available in the project's pitch-level
 summary data, alongside peak shoulder-rotation velocity and elbow varus moment.
 This chart focuses on the time-varying mechanics instead.
 
-## What this can—and cannot—tell us
+## How elbow moment varies during a pitch
 
-These measurements can help explore how mechanics and joint loading vary
-together and may inform hypotheses about injury risk. The dataset does **not**
-include confirmed injury diagnoses, so it cannot establish which athletes were
-injured or validate an injury-risk estimate.
+The next plot shows how elbow varus/valgus moment changes over the recorded
+duration of a pitch. Curves are aligned by each trial's relative time and
+summarized with the median and interquartile range. This is an elbow loading
+measure, not a direct measurement of stress on shoulder tissue.
+
+```{r}
+#| label: fig-elbow-moment-time
+#| fig-cap: "Median elbow varus/valgus moment over the relative recorded duration of a pitch; shading shows the interquartile range across pitches."
+#| fig-width: 9
+#| fig-height: 5.5
+
+moment_profile <- plot_data |>
+  group_by(session_pitch) |>
+  mutate(
+    pitch_progress = round(
+      (time - min(time)) / (max(time) - min(time)) * 100
+    )
+  ) |>
+  group_by(session_pitch, pitch_progress) |>
+  summarise(elbow_moment_y = median(elbow_moment_y), .groups = "drop") |>
+  group_by(pitch_progress) |>
+  summarise(
+    median_moment = median(elbow_moment_y),
+    lower_moment = quantile(elbow_moment_y, 0.25),
+    upper_moment = quantile(elbow_moment_y, 0.75),
+    .groups = "drop"
+  )
+
+ggplot(moment_profile, aes(x = pitch_progress, y = median_moment)) +
+  geom_ribbon(
+    aes(ymin = lower_moment, ymax = upper_moment),
+    fill = "#8FC1D4",
+    alpha = 0.5
+  ) +
+  geom_line(color = "#176B87", linewidth = 1) +
+  labs(
+    x = "Relative recorded pitch duration (%)",
+    y = "Elbow varus (+) / valgus (-) moment (Nm)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+This time-course plot adds context by showing when elbow moment tends to rise
+or fall over a pitch, while the shaded band shows how much the middle half of
+trials varies at each point. It helps locate phases of greater typical elbow
+loading and compare consistency across pitches; it does not measure shoulder
+tissue stress or establish injury risk.
+
+## Distribution of peak elbow varus moment
+
+```{r}
+#| label: fig-varus-moment-distribution
+#| fig-cap: "Distribution of each pitch's peak signed elbow varus moment; the dashed line marks the median across pitches."
+#| fig-width: 9
+#| fig-height: 5.5
+
+pitch_peak_moments <- plot_data |>
+  group_by(session_pitch) |>
+  summarise(peak_varus_moment = max(elbow_moment_y), .groups = "drop")
+
+ggplot(pitch_peak_moments, aes(x = peak_varus_moment)) +
+  geom_histogram(bins = 30, fill = "#176B87", color = "white") +
+  geom_vline(
+    xintercept = median(pitch_peak_moments$peak_varus_moment),
+    linetype = "dashed",
+    color = "#C45435",
+    linewidth = 1
+  ) +
+  labs(
+    x = "Peak elbow varus (+) / valgus (-) moment per pitch (Nm)",
+    y = "Number of pitches",
+    caption = paste(
+      "One peak value per pitch; dashed line is the median across",
+      nrow(pitch_peak_moments), "pitches."
+    )
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+This plot shows how peak elbow moments are distributed across pitches, with
+one value per pitch so trials with more recorded time samples do not dominate
+the distribution. It compares peak elbow loading between trials, not how load
+is distributed across shoulder tissues or how much stress an individual
+shoulder experiences.
 
 ## About the data
 
